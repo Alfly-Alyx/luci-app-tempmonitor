@@ -1,0 +1,6 @@
+config tempmonitor 'main'
+	option enabled '1'
+	option interval '30'
+	option cpu '1'
+	option wifi '1'
+	option extra '0'

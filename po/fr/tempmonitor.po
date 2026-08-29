@@ -1,0 +1,62 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "%H: CPU and Wi-Fi temperatures"
+msgstr "%H : températures du CPU et des puces Wi-Fi"
+
+msgid "Also graph temperatures such as NVMe drives when exposed through hwmon."
+msgstr "Affiche aussi les températures telles que celles des disques NVMe lorsqu'elles sont exposées par hwmon."
+
+msgid "Collection interval"
+msgstr "Intervalle de collecte"
+
+msgid "Collection settings"
+msgstr "Réglages de la collecte"
+
+msgid "Collects CPU and Wi-Fi chip temperatures and displays them under Statistics → Graphs → Temperatures. Sensor files are read-only; this service does not change thermal limits or fan control."
+msgstr "Collecte les températures du CPU et des puces Wi-Fi, puis les affiche dans Statistiques → Graphiques → Températures. Les capteurs sont lus sans écriture ; ce service ne modifie ni les limites thermiques ni le contrôle des ventilateurs."
+
+msgid "CPU"
+msgstr "CPU"
+
+msgid "CPU / SoC"
+msgstr "CPU / SoC"
+
+msgid "Enable temperature collection"
+msgstr "Activer la collecte des températures"
+
+msgid "Other hwmon sensors"
+msgstr "Autres capteurs hwmon"
+
+msgid "Seconds between samples (5 to 300)."
+msgstr "Nombre de secondes entre deux mesures (5 à 300)."
+
+msgid "Temperature Monitor"
+msgstr "Surveillance des températures"
+
+msgid "Temperatures"
+msgstr "Températures"
+
+msgid "Wi-Fi"
+msgstr "Wi-Fi"
+
+msgid "Wi-Fi chips"
+msgstr "Puces Wi-Fi"
+
+msgid "2 hours"
+msgstr "2 heures"
+
+msgid "1 day"
+msgstr "1 journée"
+
+msgid "1 week"
+msgstr "1 semaine"
+
+msgid "1 month"
+msgstr "1 mois"
+
+msgid "1 year"
+msgstr "1 année"
+
+msgid "Unable to save the selected period: %s"
+msgstr "Impossible d'enregistrer la période sélectionnée : %s"

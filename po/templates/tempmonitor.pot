@@ -1,0 +1,62 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "%H: CPU and Wi-Fi temperatures"
+msgstr ""
+
+msgid "Also graph temperatures such as NVMe drives when exposed through hwmon."
+msgstr ""
+
+msgid "Collection interval"
+msgstr ""
+
+msgid "Collection settings"
+msgstr ""
+
+msgid "Collects CPU and Wi-Fi chip temperatures and displays them under Statistics → Graphs → Temperatures. Sensor files are read-only; this service does not change thermal limits or fan control."
+msgstr ""
+
+msgid "CPU"
+msgstr ""
+
+msgid "CPU / SoC"
+msgstr ""
+
+msgid "Enable temperature collection"
+msgstr ""
+
+msgid "Other hwmon sensors"
+msgstr ""
+
+msgid "Seconds between samples (5 to 300)."
+msgstr ""
+
+msgid "Temperature Monitor"
+msgstr ""
+
+msgid "Temperatures"
+msgstr ""
+
+msgid "Wi-Fi"
+msgstr ""
+
+msgid "Wi-Fi chips"
+msgstr ""
+
+msgid "2 hours"
+msgstr ""
+
+msgid "1 day"
+msgstr ""
+
+msgid "1 week"
+msgstr ""
+
+msgid "1 month"
+msgstr ""
+
+msgid "1 year"
+msgstr ""
+
+msgid "Unable to save the selected period: %s"
+msgstr ""

@@ -1,0 +1,11 @@
+{
+	"luci-app-tempmonitor": {
+		"description": "Grant access to temperature monitor settings",
+		"read": {
+			"uci": [ "tempmonitor" ]
+		},
+		"write": {
+			"uci": [ "tempmonitor" ]
+		}
+	}
+}

@@ -1,0 +1,26 @@
+{
+	"admin/statistics/graphs": {
+		"title": "Graphs",
+		"order": 10,
+		"action": {
+			"type": "view",
+			"path": "tempmonitor/graphs"
+		},
+		"depends": {
+			"acl": [ "luci-app-statistics" ],
+			"uci": { "luci_statistics": true }
+		}
+	},
+	"admin/statistics/tempmonitor": {
+		"title": "Temperatures",
+		"order": 15,
+		"action": {
+			"type": "view",
+			"path": "tempmonitor/settings"
+		},
+		"depends": {
+			"acl": [ "luci-app-tempmonitor" ],
+			"uci": { "tempmonitor": true }
+		}
+	}
+}

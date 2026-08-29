@@ -1,0 +1,192 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: Apache-2.0
+# Read-only CPU and Wi-Fi temperature collector for collectd's exec plugin.
+
+SYSFS_ROOT="${TEMPMONITOR_SYSFS_ROOT:-/sys}"
+HOST="${COLLECTD_HOSTNAME:-${TEMPMONITOR_HOSTNAME:-}}"
+[ -n "$HOST" ] || HOST="$(cat /proc/sys/kernel/hostname 2>/dev/null)"
+[ -n "$HOST" ] || HOST='localhost'
+
+sanitize()
+{
+	printf '%s' "$1" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9_' '_'
+}
+
+config_get()
+{
+	uci -q get "tempmonitor.main.$1" 2>/dev/null || printf '%s\n' "$2"
+}
+
+read_config()
+{
+	ENABLED="$(config_get enabled 1)"
+	COLLECT_CPU="$(config_get cpu 1)"
+	COLLECT_WIFI="$(config_get wifi 1)"
+	COLLECT_EXTRA="$(config_get extra 0)"
+	INTERVAL="$(config_get interval "${COLLECTD_INTERVAL:-30}")"
+
+	case "$INTERVAL" in
+		''|*[!0-9]*) INTERVAL=30 ;;
+	esac
+	[ "$INTERVAL" -ge 5 ] 2>/dev/null || INTERVAL=5
+	[ "$INTERVAL" -le 300 ] 2>/dev/null || INTERVAL=300
+}
+
+normalize_temperature()
+{
+	raw="$1"
+	sign=''
+
+	case "$raw" in
+		-*) sign='-'; raw="${raw#-}" ;;
+	esac
+
+	case "$raw" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+
+	# Linux thermal and hwmon ABIs report temperatures in millidegrees Celsius.
+	[ "$raw" -le 300000 ] 2>/dev/null || return 1
+	whole=$((raw / 1000))
+	fraction=$((raw % 1000))
+	printf '%s%d.%03d' "$sign" "$whole" "$fraction"
+}
+
+emit_sensor()
+{
+	instance="$(sanitize "$1")"
+	input="$2"
+	[ -n "$instance" ] || return 1
+	[ -r "$input" ] || return 1
+
+	raw="$(cat "$input" 2>/dev/null)"
+	value="$(normalize_temperature "$raw")" || return 1
+	printf 'PUTVAL "%s/tempmonitor/temperature-%s" interval=%s N:%s\n' \
+		"$HOST" "$instance" "$INTERVAL" "$value"
+}
+
+emit_hwmon_channels()
+{
+	kind="$1"
+	hwmon="$2"
+	hwmon_name="$3"
+	base="$(sanitize "$hwmon_name")"
+	found=1
+
+	for input in "$hwmon"/temp*_input; do
+		[ -f "$input" ] || continue
+		filename="${input##*/}"
+		channel="${filename#temp}"
+		channel="${channel%_input}"
+		label_file="${input%_input}_label"
+		channel_label=''
+		[ -r "$label_file" ] && channel_label="$(cat "$label_file" 2>/dev/null)"
+
+		case "$kind" in
+			cpu)
+				instance='cpu'
+				if [ "$channel" != '1' ] || [ -n "$channel_label" ]; then
+					instance="cpu_${channel_label:-temp$channel}"
+				fi
+				;;
+			wifi)
+				instance="wifi_${base}"
+				if [ "$channel" != '1' ] || [ -n "$channel_label" ]; then
+					instance="${instance}_${channel_label:-temp$channel}"
+				fi
+				;;
+			extra)
+				instance="sensor_${base}"
+				if [ "$channel" != '1' ] || [ -n "$channel_label" ]; then
+					instance="${instance}_${channel_label:-temp$channel}"
+				fi
+				;;
+		esac
+
+		emit_sensor "$instance" "$input" && found=0
+	done
+
+	return "$found"
+}
+
+is_cpu_hwmon()
+{
+	case "$1" in
+		*cpu*|*soc*|*package*|*coretemp*|*k10temp*|*zenpower*) return 0 ;;
+	esac
+	return 1
+}
+
+is_wifi_hwmon()
+{
+	case "$1" in
+		*wifi*|*wi-fi*|*wlan*|*wireless*|*80211*|*phy[0-9]*|mt76*|mt79*|ath*|iwlwifi*|brcm*|rtl*) return 0 ;;
+	esac
+	return 1
+}
+
+collect_once()
+{
+	CPU_FOUND=0
+	WIFI_FOUND=0
+
+	for hwmon in "$SYSFS_ROOT"/class/hwmon/hwmon*; do
+		[ -d "$hwmon" ] || continue
+		name="$(cat "$hwmon/name" 2>/dev/null)"
+		lower_name="$(printf '%s' "$name" | tr 'A-Z' 'a-z')"
+		[ -n "$lower_name" ] || lower_name="${hwmon##*/}"
+
+		if [ "$COLLECT_CPU" != '0' ] && is_cpu_hwmon "$lower_name"; then
+			emit_hwmon_channels cpu "$hwmon" "$lower_name" && CPU_FOUND=1
+		elif [ "$COLLECT_WIFI" != '0' ] && is_wifi_hwmon "$lower_name"; then
+			emit_hwmon_channels wifi "$hwmon" "$lower_name" && WIFI_FOUND=1
+		elif [ "$COLLECT_EXTRA" != '0' ]; then
+			emit_hwmon_channels extra "$hwmon" "$lower_name"
+		fi
+	done
+
+	# Some drivers only link their hwmon directory below ieee80211. Use it as a
+	# fallback, after the global hwmon class, to avoid duplicate Wi-Fi curves.
+	if [ "$COLLECT_WIFI" != '0' ] && [ "$WIFI_FOUND" = '0' ]; then
+		for hwmon in "$SYSFS_ROOT"/class/ieee80211/phy*/device/hwmon/hwmon*; do
+			[ -d "$hwmon" ] || continue
+			name="$(cat "$hwmon/name" 2>/dev/null)"
+			[ -n "$name" ] || name="${hwmon##*/}"
+			emit_hwmon_channels wifi "$hwmon" "$name" && WIFI_FOUND=1
+		done
+	fi
+
+	# thermal_zone is the portable CPU fallback when no matching hwmon device
+	# exists. It intentionally runs last to avoid graphing one CPU sensor twice.
+	if [ "$COLLECT_CPU" != '0' ] && [ "$CPU_FOUND" = '0' ]; then
+		for zone in "$SYSFS_ROOT"/class/thermal/thermal_zone*; do
+			[ -d "$zone" ] || continue
+			type="$(cat "$zone/type" 2>/dev/null)"
+			lower_type="$(printf '%s' "$type" | tr 'A-Z' 'a-z')"
+			case "$lower_type" in
+				*cpu*|*soc*|*package*|*cluster*|*core*)
+					instance='cpu'
+					[ "$CPU_FOUND" = '0' ] || instance="cpu_${lower_type}"
+					emit_sensor "$instance" "$zone/temp" && CPU_FOUND=1
+					;;
+			esac
+		done
+	fi
+}
+
+read_config
+
+if [ "$1" = '--once' ]; then
+	[ "$ENABLED" = '0' ] || collect_once
+	exit 0
+fi
+
+trap 'exit 0' TERM INT
+
+while :; do
+	read_config
+	[ "$ENABLED" = '0' ] || collect_once
+	sleep "$INTERVAL" &
+	wait $!
+done

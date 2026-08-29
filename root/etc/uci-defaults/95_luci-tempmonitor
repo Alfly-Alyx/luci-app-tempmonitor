@@ -1,0 +1,36 @@
+#!/bin/sh
+
+previous_enable="$(uci -q get luci_statistics.collectd_exec.enable)"
+[ -n "$previous_enable" ] || previous_enable='0'
+
+if ! uci -q get luci_statistics.tempmonitor._previous_exec_enable >/dev/null; then
+	uci -q set luci_statistics.tempmonitor='collectd_exec_input'
+	uci -q set luci_statistics.tempmonitor._previous_exec_enable="$previous_enable"
+fi
+
+uci -q set luci_statistics.collectd_exec='statistics'
+uci -q set luci_statistics.collectd_exec.enable='1'
+uci -q set luci_statistics.tempmonitor.cmdline='/usr/libexec/collectd/tempmonitor'
+uci -q set luci_statistics.tempmonitor.cmduser='nobody'
+uci -q set luci_statistics.tempmonitor.cmdgroup='nogroup'
+
+# Keep user-defined RRA periods intact. Only initialize the standard periods
+# when luci-app-statistics did not provide any.
+if [ -z "$(uci -q get luci_statistics.collectd_rrdtool.RRATimespans)" ]; then
+	uci -q add_list luci_statistics.collectd_rrdtool.RRATimespans='2hour'
+	uci -q add_list luci_statistics.collectd_rrdtool.RRATimespans='1day'
+	uci -q add_list luci_statistics.collectd_rrdtool.RRATimespans='1week'
+	uci -q add_list luci_statistics.collectd_rrdtool.RRATimespans='1month'
+	uci -q add_list luci_statistics.collectd_rrdtool.RRATimespans='1year'
+fi
+
+uci -q commit luci_statistics
+
+rm -f /tmp/luci-indexcache
+rm -rf /tmp/luci-modulecache/
+
+if [ -z "$IPKG_INSTROOT" ] && [ -x /etc/init.d/luci_statistics ]; then
+	/etc/init.d/luci_statistics restart >/dev/null 2>&1 || true
+fi
+
+exit 0

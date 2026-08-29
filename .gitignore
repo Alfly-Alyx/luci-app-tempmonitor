@@ -1,0 +1,6 @@
+*.apk
+*.ipk
+*.adb
+artifacts/*.png
+build/
+dist/

@@ -1,0 +1,11 @@
+/etc/config/tempmonitor
+/etc/uci-defaults/95_luci-tempmonitor
+/lib/apk/packages/luci-app-tempmonitor.conffiles
+/lib/apk/packages/luci-app-tempmonitor.conffiles_static
+/lib/apk/packages/luci-app-tempmonitor.list
+/usr/libexec/collectd/tempmonitor
+/usr/share/luci/menu.d/luci-app-tempmonitor.json
+/usr/share/rpcd/acl.d/luci-app-tempmonitor.json
+/www/luci-static/resources/statistics/rrdtool/definitions/tempmonitor.js
+/www/luci-static/resources/view/tempmonitor/graphs.js
+/www/luci-static/resources/view/tempmonitor/settings.js

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if [ -z "$IPKG_INSTROOT" ] && command -v uci >/dev/null 2>&1; then
+	previous_enable="$(uci -q get luci_statistics.tempmonitor._previous_exec_enable)"
+	uci -q delete luci_statistics.tempmonitor
+
+	remaining_inputs="$(uci -q show luci_statistics | grep '=collectd_exec_input$' | head -n 1)"
+	if [ -z "$remaining_inputs" ] && [ -n "$previous_enable" ]; then
+		uci -q set luci_statistics.collectd_exec.enable="$previous_enable"
+	fi
+
+	uci -q commit luci_statistics
+	rm -f /tmp/luci-indexcache
+	rm -rf /tmp/luci-modulecache/
+
+	if [ -x /etc/init.d/luci_statistics ]; then
+		/etc/init.d/luci_statistics restart >/dev/null 2>&1 || true
+	fi
+fi
+
+exit 0
