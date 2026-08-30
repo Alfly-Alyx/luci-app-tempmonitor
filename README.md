@@ -61,6 +61,10 @@ La mémorisation de la période remplace uniquement l'action de la page
 `luci-app-statistics` n'est écrasé : la désinstallation de ce paquet restaure
 automatiquement la page d'origine.
 
+La vue Tempmonitor délègue son rendu à la vue installée par
+`luci-app-statistics`, puis ajoute uniquement la mémorisation. Elle bénéficie
+donc des mises à jour ordinaires de Statistics sans recopier son code.
+
 ## Diagnostic
 
 Pour vérifier la découverte sans attendre collectd :
